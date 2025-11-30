@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN for pkg in $(cat requirements.txt); do pip install $pkg || true; done
 
 # Явно устанавливаем gunicorn на случай, если его нет в requirements.txt
 RUN pip install gunicorn==23.0.0

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     build: .
@@ -36,11 +38,8 @@ services:
       - app-network
 
   redis:
-    image: redis:7-alpine
-    volumes:
-      - ./redis.conf:/etc/redis/redis.conf
-      - redis_data:/data
-    command: redis-server /etc/redis/redis.conf
+    image: redis:6.2-alpine
+    command: redis-server --appendonly yes --protected-mode no
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -100,7 +99,6 @@ volumes:
   postgres_data:
   static_volume:
   media_volume:
-  redis_data:
 
 networks:
   app-network:

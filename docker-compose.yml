@@ -1,3 +1,4 @@
+
 services:
   web:
     build: .
@@ -37,6 +38,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes --vm.overcommit-memory 1
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -48,7 +50,7 @@ services:
 
   celery:
     build: .
-    command: celery -A julian worker --loglevel=info --without-gossip --without-mingle --without-heartbeat
+    command: celery -A julian worker --loglevel=info --uid=0
     volumes:
       - media_volume:/app/media
     env_file:
@@ -64,7 +66,7 @@ services:
 
   celery-beat:
     build: .
-    command: celery -A julian beat --loglevel=info --without-gossip --without-mingle --without-heartbeat
+    command: celery -A julian beat --loglevel=info
     volumes:
       - media_volume:/app/media
     env_file:
@@ -82,7 +84,6 @@ services:
     image: nginx:1.25-alpine
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - static_volume:/app/static

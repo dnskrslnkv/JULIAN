@@ -1,0 +1,43 @@
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=julian.settings
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    postgresql-dev \
+    python3-dev \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy project
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/static /app/media /app/media/models /app/media/reports /app/media/yolo_datasets /app/media/yolo_training
+
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
+# Make entrypoint script executable
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Expose port
+EXPOSE 8000
+
+# Run entrypoint
+CMD ["./entrypoint.sh"]

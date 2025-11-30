@@ -1,6 +1,5 @@
 acres
 amqp
-apturl
 asgiref
 async-timeout
 bcrypt

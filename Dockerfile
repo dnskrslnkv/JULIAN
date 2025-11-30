@@ -29,6 +29,8 @@ RUN for pkg in $(cat requirements.txt); do pip install $pkg || true; done
 RUN pip uninstall -y opencv-python opencv-python-headless || true
 RUN pip install opencv-python-headless==4.10.0.84
 
+RUN pip install gunicorn==23.0.0
+
 # Проверяем установку
 RUN pip show gunicorn && which gunicorn
 

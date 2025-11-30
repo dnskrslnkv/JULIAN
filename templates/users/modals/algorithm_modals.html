@@ -1,0 +1,259 @@
+<!-- templates/users/modals/algorithm_modals.html -->
+{% load static %}  <!-- Добавляем загрузку static тега -->
+
+<!-- Модальное окно для животных -->
+<div class="modal fade" id="animalsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-paw mr-2"></i>Алгоритм работы: Детекция животных
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="step-container">
+                    <div class="step">
+                        <h5 class="text-success">
+                            <i class="fas fa-upload mr-2"></i>Шаг 1: Загрузка фотографий
+                        </h5>
+                        <p>Загрузите изображения с животными в систему. Поддерживаются форматы JPG, PNG, JPEG до 10MB каждый.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-4 rounded border border-success" style="border-style: dashed !important;">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-success mb-3"></i>
+                                <p class="text-muted">Перетащите файлы или нажмите для загрузки</p>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: 75%"></div>
+                                </div>
+                                <small class="text-muted">Загружено 15 из 20 изображений</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step mt-4">
+                        <h5 class="text-success">
+                            <i class="fas fa-draw-polygon mr-2"></i>Шаг 2: Разметка фотографий
+                        </h5>
+                        <p>Выделите области с животными на 30% изображений для обучения модели. Просто рисуйте прямоугольники вокруг объектов.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-3 rounded border">
+                                <img src="{% static 'images/annotation-example.jpg' %}" alt="Пример разметки" class="img-fluid rounded" style="max-height: 200px;">
+                                <p class="text-success mt-2">
+                                    <i class="fas fa-check-circle mr-1"></i>Пример разметки объектов
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step mt-4">
+                        <h5 class="text-success">
+                            <i class="fas fa-chart-line mr-2"></i>Шаг 3: Моделирование и статистика
+                        </h5>
+                        <p>Система автоматически обучит модель и предоставит детальную статистику обнаружения в реальном времени.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-4 rounded">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <h4 class="text-success">95%</h4>
+                                        <small class="text-muted">Точность</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 class="text-success">87%</h4>
+                                        <small class="text-muted">Полнота</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 class="text-success">0.91</h4>
+                                        <small class="text-muted">F1-мера</small>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="bg-white p-3 rounded border">
+                                        <small class="text-success">
+                                            <i class="fas fa-bullseye mr-1"></i>Обнаружено 23 объекта на 15 изображениях
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-success" data-dismiss="modal">Закрыть</button>
+                <a href="{% url 'register' %}" class="btn btn-success">Попробовать сейчас</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для повреждений -->
+<div class="modal fade" id="damageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-tools mr-2"></i>Алгоритм работы: Детекция повреждений
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="step-container">
+                    <div class="step">
+                        <h5 class="text-success">
+                            <i class="fas fa-upload mr-2"></i>Шаг 1: Загрузка изображений дефектов
+                        </h5>
+                        <p>Загрузите фотографии металлических поверхностей, конструкций или оборудования для анализа.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-4 rounded border border-success" style="border-style: dashed !important;">
+                                <i class="fas fa-industry fa-3x text-success mb-3"></i>
+                                <p class="text-muted">Загрузите изображения для анализа повреждений</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step mt-4">
+                        <h5 class="text-success">
+                            <i class="fas fa-search mr-2"></i>Шаг 2: Разметка типов повреждений
+                        </h5>
+                        <p>Отметьте области с коррозией, трещинами, вмятинами и другими дефектами.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-3 rounded border">
+                                <div class="text-success mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Обнаружены: коррозия, трещины, деформации
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step mt-4">
+                        <h5 class="text-success">
+                            <i class="fas fa-chart-bar mr-2"></i>Шаг 3: Анализ и отчет
+                        </h5>
+                        <p>Получите детальный отчет с классификацией повреждений и рекомендациями.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-4 rounded">
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <h5 class="text-success">12</h5>
+                                        <small class="text-muted">Коррозия</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <h5 class="text-success">5</h5>
+                                        <small class="text-muted">Трещины</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <h5 class="text-success">3</h5>
+                                        <small class="text-muted">Деформации</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <h5 class="text-success">2</h5>
+                                        <small class="text-muted">Прочие</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-success" data-dismiss="modal">Закрыть</button>
+                <a href="{% url 'register' %}" class="btn btn-success">Начать анализ</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для медицины -->
+<div class="modal fade" id="medicalModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-heartbeat mr-2"></i>Алгоритм работы: Медицинская диагностика
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="step-container">
+                    <div class="step">
+                        <h5 class="text-success">
+                            <i class="fas fa-file-medical mr-2"></i>Шаг 1: Загрузка медицинских снимков
+                        </h5>
+                        <p>Загрузите рентгеновские снимки, МРТ, КТ или другие медицинские изображения.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-4 rounded border border-success" style="border-style: dashed !important;">
+                                <i class="fas fa-hospital fa-3x text-success mb-3"></i>
+                                <p class="text-muted">Загрузите медицинские изображения для анализа</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step mt-4">
+                        <h5 class="text-success">
+                            <i class="fas fa-stethoscope mr-2"></i>Шаг 2: Разметка аномалий
+                        </h5>
+                        <p>Отметьте области с патологиями, новообразованиями или другими аномалиями.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-3 rounded border">
+                                <div class="text-success">
+                                    <i class="fas fa-notes-medical mr-1"></i>
+                                    Поддерживаемые типы: переломы, опухоли, воспаления
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step mt-4">
+                        <h5 class="text-success">
+                            <i class="fas fa-diagnoses mr-2"></i>Шаг 3: Диагностика и статистика
+                        </h5>
+                        <p>Получите автоматизированный анализ с вероятностными оценками обнаружения.</p>
+                        <div class="text-center">
+                            <div class="bg-light p-4 rounded">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <h5 class="text-success">98%</h5>
+                                        <small class="text-muted">Чувствительность</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h5 class="text-success">94%</h5>
+                                        <small class="text-muted">Специфичность</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h5 class="text-success">96%</h5>
+                                        <small class="text-muted">Точность</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-success" data-dismiss="modal">Закрыть</button>
+                <a href="{% url 'register' %}" class="btn btn-success">Начать диагностику</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step {
+    padding: 1.5rem;
+    border-left: 4px solid var(--success);
+    background-color: var(--light-gray);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header.bg-success {
+    background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%) !important;
+}
+</style>

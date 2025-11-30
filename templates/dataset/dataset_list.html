@@ -1,0 +1,86 @@
+<!-- templates/dataset/dataset_list.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Мои датасеты</h1>
+    <a href="{% url 'dataset_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Создать датасет
+    </a>
+</div>
+
+{% if datasets %}
+<div class="row">
+    {% for dataset in datasets %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ dataset.name }}</h5>
+                <p class="card-text text-muted small">
+                    {{ dataset.description|default:"Описание отсутствует" }}
+                </p>
+                <div class="dataset-stats">
+                    <small class="text-muted">
+                        <i class="fas fa-images"></i> {{ dataset.get_image_count }} изображений
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-tag"></i> {{ dataset.get_annotated_count }} размечено
+                    </small>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ dataset.created_at|date:"d.m.Y" }}</small>
+                    <div>
+                        <a href="{% url 'dataset_detail' dataset.pk %}" class="btn btn-sm btn-outline-primary">
+                            Открыть
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#deleteModal{{ dataset.pk }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для подтверждения удаления -->
+    <div class="modal fade" id="deleteModal{{ dataset.pk }}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel{{ dataset.pk }}" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel{{ dataset.pk }}">Подтверждение удаления</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Вы уверены, что хотите удалить датасет "{{ dataset.name }}"?
+                    {% if dataset.get_image_count > 0 or dataset.get_pdf_count > 0 %}
+                    <br><small class="text-danger">Это действие также удалит все загруженные файлы ({{ dataset.get_image_count }} изображений и {{ dataset.get_pdf_count }} PDF-файлов).</small>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                    <form method="POST" action="{% url 'dataset_delete' dataset.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+    <h3 class="text-muted">У вас пока нет датасетов</h3>
+    <p class="text-muted">Создайте свой первый датасет для загрузки изображений</p>
+    <a href="{% url 'dataset_create' %}" class="btn btn-primary btn-lg">
+        Создать первый датасет
+    </a>
+</div>
+{% endif %}
+{% endblock %}

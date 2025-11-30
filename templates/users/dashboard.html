@@ -1,0 +1,169 @@
+<!-- templates/users/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>Добро пожаловать, {{ user.first_name|default:user.username }}!</h1>
+        <p class="text-muted">Панель управления вашими проектами</p>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-5">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-folder-open fa-2x mb-2"></i>
+                <h3>{{ total_datasets }}</h3>
+                <p class="mb-0">Датасетов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-images fa-2x mb-2"></i>
+                <h3>{{ total_images }}</h3>
+                <p class="mb-0">Всего изображений</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <i class="fas fa-pencil-alt fa-2x mb-2"></i>
+                <h3>{{ annotated_images }}</h3>
+                <p class="mb-0">Размечено</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                <h3>{{ user.date_joined|date:"Y" }}</h3>
+                <p class="mb-0">Год регистрации</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые действия -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-succes text-white">
+                <h5 class="mb-0">Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <a href="{% url 'dataset_create' %}" class="btn btn-success btn-lg btn-block py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            Создать датасет
+                        </a>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <a href="{% url 'dataset_list' %}" class="btn btn-success btn-lg btn-block py-3">
+                            <i class="fas fa-folder-open fa-2x mb-2"></i><br>
+                            Мои датасеты
+                        </a>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <a href="{% url 'profile' %}" class="btn btn-success btn-lg btn-block py-3">
+                            <i class="fas fa-user-cog fa-2x mb-2"></i><br>
+                            Настройки профиля
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Последние датасеты -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-succes d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Последние датасеты</h5>
+                <a href="{% url 'dataset_list' %}" class="btn btn-sm  btn-outline-success text-white d-flex">Все датасеты</a>
+            </div>
+            <div class="card-body">
+                {% if recent_datasets %}
+                    <div class="row">
+                        {% for dataset in recent_datasets %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ dataset.name }}</h6>
+                                    <p class="card-text text-muted small">
+                                        {{ dataset.description|default:"Описание отсутствует"|truncatewords:10 }}
+                                    </p>
+                                    <div class="dataset-stats small text-muted">
+                                        <i class="fas fa-images"></i> {{ dataset.get_image_count }} изображений<br>
+                                        <i class="fas fa-tag"></i> {{ dataset.get_annotated_count }} размечено<br>
+                                        <i class="fas fa-calendar"></i> {{ dataset.created_at|date:"d.m.Y" }}
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <a href="{% url 'dataset_detail' dataset.pk %}" class="btn btn-success btn-sm btn-block">
+                                        Открыть датасет
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">У вас пока нет датасетов</h5>
+                        <p class="text-muted">Создайте свой первый датасет для начала работы</p>
+                        <a href="{% url 'dataset_create' %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Создать первый датасет
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Инструкция -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-succes">
+                <h5 class="mb-0">Как начать работу?</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <h4 class="mb-0">1</h4>
+                        </div>
+                        <h6>Создайте датасет</h6>
+                        <p class="text-muted small">Создайте новый проект и дайте ему понятное название</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <h4 class="mb-0">2</h4>
+                        </div>
+                        <h6>Загрузите изображения</h6>
+                        <p class="text-muted small">Добавьте фотографии или PDF файлы для анализа</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <h4 class="mb-0">3</h4>
+                        </div>
+                        <h6>Разметьте и анализируйте</h6>
+                        <p class="text-muted small">Разметьте объекты и запустите автоматическую детекцию</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

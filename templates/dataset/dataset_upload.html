@@ -1,0 +1,145 @@
+<!-- templates/dataset/dataset_upload.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Датасеты</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dataset_detail' dataset.pk %}">{{ dataset.name }}</a></li>
+                <li class="breadcrumb-item active">Загрузка файлов</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-images"></i> Загрузка изображений</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="image-upload-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ image_form.images.id_for_label }}">{{ image_form.images.label }}</label>
+                        <input type="file" name="images" multiple
+                               class="form-control-file"
+                               accept="image/*"
+                               id="{{ image_form.images.id_for_label }}">
+                        {% if image_form.images.help_text %}
+                        <small class="form-text text-muted">{{ image_form.images.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-upload"></i> Загрузить изображения
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-file-pdf"></i> Загрузка PDF файлов</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="pdf-upload-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ pdf_form.pdf_files.id_for_label }}">{{ pdf_form.pdf_files.label }}</label>
+                        <input type="file" name="pdf_files" multiple
+                               class="form-control-file"
+                               accept=".pdf"
+                               id="{{ pdf_form.pdf_files.id_for_label }}">
+                        {% if pdf_form.pdf_files.help_text %}
+                        <small class="form-text text-muted">{{ pdf_form.pdf_files.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-upload"></i> Загрузить PDF файлы
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary">
+                <h5 class="mb-0">Инструкция по загрузке</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Для выбора нескольких файлов удерживайте клавишу <kbd>Ctrl</kbd> (Windows) или <kbd>Cmd</kbd> (Mac)</li>
+                    <li>Максимальный размер файла: 10MB</li>
+                    <li>Рекомендуемое количество изображений для разметки: 30+</li>
+                    <li>PDF файлы будут автоматически конвертированы в изображения</li>
+                </ul>
+                <div class="text-center">
+                    <a href="{% url 'dataset_detail' dataset.pk %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Вернуться к датасету
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control-file {
+    border: 2px dashed #dee2e6;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+    width: 100%;
+}
+
+.form-control-file:hover {
+    border-color: #00a884;
+}
+</style>
+{% endblock %}
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Показываем количество выбранных файлов
+    const imageInput = document.getElementById('{{ image_form.images.id_for_label }}');
+    const pdfInput = document.getElementById('{{ pdf_form.pdf_files.id_for_label }}');
+
+    function updateFileCount(input, type) {
+        if (input.files.length > 0) {
+            const label = input.parentElement.querySelector('label');
+            const originalText = type === 'image' ? '{{ image_form.images.label }}' : '{{ pdf_form.pdf_files.label }}';
+            label.textContent = `${originalText} (выбрано: ${input.files.length})`;
+        }
+    }
+
+    imageInput.addEventListener('change', function() {
+        updateFileCount(this, 'image');
+    });
+
+    pdfInput.addEventListener('change', function() {
+        updateFileCount(this, 'pdf');
+    });
+
+    // Предотвращаем отправку пустых форм
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const fileInput = this.querySelector('input[type="file"]');
+            if (fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите хотя бы один файл для загрузки.');
+            }
+        });
+    });
+});
+</script>

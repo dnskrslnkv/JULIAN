@@ -1,0 +1,176 @@
+<!-- templates/detection/model_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Датасеты</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dataset_detail' dataset.pk %}">{{ dataset.name }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'model_list' dataset.pk %}">ML Модели</a></li>
+                <li class="breadcrumb-item active">{{ model.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>{{ model.name }}</h1>
+        <p class="text-muted">{{ model.description|default:"Описание отсутствует" }}</p>
+    </div>
+    <div class="col-md-4 text-right">
+        <div class="btn-group">
+            {% if model.status == 'trained' %}
+            <a href="{% url 'detection_results' dataset.pk model.pk %}" class="btn btn-success">
+                <i class="fas fa-search"></i> Результаты детекции
+            </a>
+            {% elif model.status == 'not_trained' and dataset.get_annotated_count >= 3 %}
+            <a href="{% url 'train_model' dataset.pk model.pk %}" class="btn btn-success" onclick="return confirm('Начать обучение модели?')">
+                <i class="fas fa-graduation-cap"></i> Обучить модель
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Статус модели -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Информация о модели</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Статус:</strong>
+                        <span class="badge badge-{{ model.status_color }} ml-2">{{ model.get_status_display }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Точность:</strong>
+                        <span class="ml-2">{{ model.accuracy|default:"Не оценена" }}{% if model.accuracy %}%{% endif %}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Создана:</strong>
+                        <span class="ml-2">{{ model.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Обучена:</strong>
+                        <span class="ml-2">{{ model.trained_at|date:"d.m.Y H:i"|default:"Не обучена" }}</span>
+                    </div>
+                </div>
+
+                <!-- Информация о статусе детекции -->
+                 {% if detection_in_progress %}
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-sync-alt fa-spin"></i>
+                        <strong>Детекция выполняется...</strong> Это может занять несколько минут.
+                    </div>
+                    {% elif detection_completed %}
+                    <div class="alert alert-success mt-3">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Детекция завершена!</strong> Обнаружено объектов: {{ detection_count }}
+                    </div>
+                    {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Детекция объектов -->
+{% if model.status == 'trained' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Детекция объектов</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'run_detection' dataset.pk model.pk %}" id="detection-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="confidence">Порог уверенности</label>
+                                <input type="range" class="form-control-range" id="confidence" name="confidence"
+                                       min="0.1" max="0.9" step="0.05" value="0.25" oninput="confidenceValue.value = this.value">
+                                <small class="form-text text-muted">
+                                    Текущее значение: <output id="confidenceValue">0.25</output>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-block" id="detection-btn">
+                                    <i class="fas fa-play"></i> Запустить детекцию
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка формы детекции
+    const detectionForm = document.getElementById('detection-form');
+    if (detectionForm) {
+        detectionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const detectionBtn = document.getElementById('detection-btn');
+
+            // Показываем загрузку
+            detectionBtn.disabled = true;
+            detectionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Запуск...';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Показываем сообщение о успешном запуске
+                    detectionBtn.innerHTML = '<i class="fas fa-check"></i> Запущено!';
+
+                    // Перезагружаем страницу через 2 секунды для отображения статуса
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    alert('Ошибка: ' + data.error);
+                    detectionBtn.disabled = false;
+                    detectionBtn.innerHTML = '<i class="fas fa-play"></i> Запустить детекцию';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при запуске детекции');
+                detectionBtn.disabled = false;
+                detectionBtn.innerHTML = '<i class="fas fa-play"></i> Запустить детекцию';
+            });
+        });
+    }
+
+    // Авто-обновление страницы каждые 30 секунд если детекция выполняется
+    {% if detection_in_progress %}
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+    {% endif %}
+});
+</script>

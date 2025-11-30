@@ -1,0 +1,505 @@
+<!-- templates/reports/report_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ report.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>{{ report.title }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-database"></i> {{ report.dataset.name }} •
+                <i class="fas fa-robot"></i> {{ report.ml_model.name }} •
+                <i class="fas fa-calendar"></i> {{ report.created_at|date:"d.m.Y H:i" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Основная информация -->
+        <div class="col-lg-8">
+            <!-- Карточка с общей информацией -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> Общая информация
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Название:</strong></td>
+                                    <td>{{ report.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Датасет:</strong></td>
+                                    <td>{{ report.dataset.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ML Модель:</strong></td>
+                                    <td>{{ report.ml_model.name }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Формат:</strong></td>
+                                    <td>{{ report.get_format_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Создан:</strong></td>
+                                    <td>{{ report.created_at|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Пользователь:</strong></td>
+                                    <td>{{ report.user.username }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Статистика
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-2 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-3">
+                                    <h4 class="text-primary mb-0">{{ report.total_images }}</h4>
+                                    <small class="text-muted">Изобр.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-3">
+                                    <h4 class="text-success mb-0">{{ report.annotated_images }}</h4>
+                                    <small class="text-muted">Размеч.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-3">
+                                    <h4 class="text-info mb-0">{{ report.total_annotations }}</h4>
+                                    <small class="text-muted">Аннот.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body py-3">
+                                    <h4 class="text-warning mb-0">{{ report.total_detections }}</h4>
+                                    <small class="text-muted">Обнар.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <div class="card bg-light">
+                                <div class="stat-item">
+                                    <h6 class="mb-0 text-danger">{{ report.high_confidence_detections|default:0 }}</h6>
+                                    <small class="text-muted">Выс. увер.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2.5 mb-2">
+                            <div class="card bg-light">
+                                <div class="stat-item">
+                                    <h4 class="text-dark mb-0">{{ report.accuracy|floatformat:1 }}%</h4>
+                                    <small class="text-muted">Точность</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Прогресс разметки -->
+                    <div class="mb-4">
+                        <h6>Прогресс разметки датасета</h6>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: {% widthratio report.annotated_images report.total_images 100 %}%"
+                                 aria-valuenow="{% widthratio report.annotated_images report.total_images 100 %}"
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {% widthratio report.annotated_images report.total_images 100 %}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ report.annotated_images }} из {{ report.total_images }} изображений размечено
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Параметры обучения -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs"></i> Параметры обучения модели
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h3 class="text-primary mb-0">{{ report.training_epochs }}</h3>
+                                    <small class="text-muted">Эпох</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle"></i> Количество полных проходов через данные
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h3 class="text-success mb-0">{{ report.training_batch_size }}</h3>
+                                    <small class="text-muted">Размер батча</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle"></i> Изображений за один шаг
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h3 class="text-warning mb-0">{{ report.training_img_size }}px</h3>
+                                    <small class="text-muted">Размер изображения</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle"></i> Размер для обработки моделью
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Метрики качества -->
+            {% if report.precision or report.recall or report.f1_score %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Метрики качества
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h3 class="text-primary mb-0">{{ report.accuracy|floatformat:1 }}%</h3>
+                                    <small class="text-muted">Accuracy</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Общая точность модели
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if report.precision %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <h3 class="text-success mb-0">{{ report.precision|floatformat:3 }}</h3>
+                                    <small class="text-muted">Precision</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Точность обнаружений
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if report.recall %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h3 class="text-info mb-0">{{ report.recall|floatformat:3 }}</h3>
+                                    <small class="text-muted">Recall</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Полнота обнаружений
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if report.f1_score %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-danger">
+                                <div class="card-body">
+                                    <h3 class="text-danger mb-0">{{ report.f1_score|floatformat:3 }}</h3>
+                                    <small class="text-muted">F1-Score</small>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Баланс precision и recall
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+
+            {% if high_confidence_images %}
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-images"></i> Изображения с высокой уверенностью (>75%)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Найдено {{ report.reportimage_set.count }} изображений с высокой уверенностью обнаружения.
+                        {% if report.images_archive %}
+                        Все изображения доступны для скачивания в архиве.
+                        {% endif %}
+                    </p>
+                    <div class="row">
+                        {% for image_data in high_confidence_images %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div style="position: relative; display: inline-block;">
+                                    <img src="{{ image_data.url }}"
+                                         class="card-img-top detection-image"
+                                         alt="{{ image_data.filename }}"
+                                         data-detection='{
+                                             "label": "{{ image_data.label|escapejs }}",
+                                             "confidence": {{ image_data.confidence }},
+                                             "x": {{ image_data.detection.x }},
+                                             "y": {{ image_data.detection.y }},
+                                             "width": {{ image_data.detection.width }},
+                                             "height": {{ image_data.detection.height }}
+                                         }'
+                                         style="height: 200px; object-fit: contain; background-color: #f8f9fa;">
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title text-truncate">{{ image_data.label }}</h6>
+                                    <p class="card-text">
+                                        <span class="badge badge-success">{{ image_data.confidence|floatformat:1 }}%</span>
+                                    </p>
+                                    <small class="text-muted text-truncate d-block">
+                                        {{ image_data.filename }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if report.reportimage_set.count > 6 %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            И еще {{ report.reportimage_set.count|add:"-6" }} изображений...
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <!-- Боковая панель -->
+        <div class="col-lg-4">
+            <!-- Загрузка файлов -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-download"></i> Файлы отчета
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if report.report_file %}
+                    <div class="text-center mb-4">
+                        <i class="fas fa-file-{{ report.format }} fa-3x text-success mb-3"></i>
+                        <p class="mb-2">Основной отчет готов</p>
+                        <a href="{% url 'reports:download_report' report.pk %}" class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-download"></i> Скачать {{ report.get_format_display|upper }}
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center mb-4">
+                        <i class="fas fa-spinner fa-spin fa-3x text-warning mb-3"></i>
+                        <p class="mb-2">Отчет генерируется...</p>
+                        <button class="btn btn-secondary w-100" disabled>
+                            <i class="fas fa-clock"></i> В процессе
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    {% if report.images_archive %}
+                    <div class="text-center">
+                        <i class="fas fa-file-archive fa-3x text-info mb-3"></i>
+                        <p class="mb-2">Архив с изображениями готов</p>
+                        <a href="{% url 'reports:download_images_archive' report.pk %}" class="btn btn-info w-100">
+                            <i class="fas fa-download"></i> Скачать архив
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Действия -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket"></i> Быстрые действия
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'model_detail' report.dataset.pk report.ml_model.pk %}"
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-robot"></i> Перейти к модели
+                        </a>
+                        <a href="{% url 'reports:report_list' report.dataset.pk %}"
+                           class="btn btn-outline-info">
+                            <i class="fas fa-list"></i> Все отчеты датасета
+                        </a>
+                        <a href="{% url 'dataset_detail' report.dataset.pk %}"
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-database"></i> К датасету
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Управление -->
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> Управление отчетом
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'reports:delete_report' report.pk %}" class="d-grid">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Вы уверены, что хотите удалить этот отчет?')">
+                            <i class="fas fa-trash"></i> Удалить отчет
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Функция для отрисовки bounding boxes на изображениях
+    function drawBoundingBoxesOnImages() {
+        const images = document.querySelectorAll('.detection-image');
+
+        images.forEach(img => {
+            const detectionData = JSON.parse(img.dataset.detection);
+            const canvas = document.createElement('canvas');
+            const container = img.parentElement;
+
+            // Устанавливаем размеры canvas как у изображения
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+
+            const ctx = canvas.getContext('2d');
+
+            // Рисуем bounding box
+            const x = detectionData.x * img.naturalWidth;
+            const y = detectionData.y * img.naturalHeight;
+            const width = detectionData.width * img.naturalWidth;
+            const height = detectionData.height * img.naturalHeight;
+
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, width, height);
+
+            // Рисуем подпись
+            const labelText = `${detectionData.label} (${(detectionData.confidence * 100).toFixed(1)}%)`;
+            ctx.fillStyle = '#ff0000';
+            const textWidth = ctx.measureText(labelText).width + 10;
+            ctx.fillRect(x, Math.max(y - 20, 0), textWidth, 20);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Arial';
+            ctx.fillText(labelText, x + 5, Math.max(y - 5, 15));
+
+            container.appendChild(canvas);
+        });
+    }
+
+    // Запускаем отрисовку после загрузки изображений
+    const images = document.querySelectorAll('.detection-image');
+    let loadedCount = 0;
+
+    images.forEach(img => {
+        if (img.complete) {
+            loadedCount++;
+        } else {
+            img.addEventListener('load', function() {
+                loadedCount++;
+                if (loadedCount === images.length) {
+                    drawBoundingBoxesOnImages();
+                }
+            });
+        }
+    });
+
+    if (loadedCount === images.length) {
+        drawBoundingBoxesOnImages();
+    }
+});
+</script>
+
+<style>
+.stat-item {
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+.stat-item:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+}
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.report-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+</style>

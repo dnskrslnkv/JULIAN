@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}  <!-- Добавляем загрузку static тега -->
+
+{% block content %}
+<!-- Герой секция с анимацией -->
+<section class="hero-section text-center py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div id="typed-text" class="display-4 font-weight-bold mb-4" style="min-height: 120px;"></div>
+                <p class="lead text-muted mb-5">Ниже показаны примеры того, что я могу делать...</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Примеры использования -->
+<section class="examples-section py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Колода 1: Животные -->
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header text-center bg-success text-white">
+                        <i class="fas fa-paw fa-2x mb-3"></i>
+                        <h4>Детекция животных</h4>
+                    </div>
+                    <div class="card-body">
+                        <img src="{% static 'images/animals-example.jpg' %}" alt="Животные" class="card-img-top mb-3" style="height: 200px; object-fit: cover; border-radius: 8px;">
+                        <p class="card-text">Обнаружение и классификация различных видов животных на изображениях. Идеально для зоологических исследований и мониторинга дикой природы.</p>
+                        <button class="btn btn-outline-success btn-block mt-3" data-toggle="modal" data-target="#animalsModal">
+                            <i class="fas fa-play-circle mr-2"></i>Узнать алгоритм работы
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Колода 2: Повреждения -->
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header text-center bg-success text-white">
+                        <i class="fas fa-tools fa-2x mb-3"></i>
+                        <h4>Детекция повреждений</h4>
+                    </div>
+                    <div class="card-body">
+                        <img src="{% static 'images/damage-example.jpg' %}" alt="Повреждения" class="card-img-top mb-3" style="height: 200px; object-fit: cover; border-radius: 8px;">
+                        <p class="card-text">Обнаружение механических повреждений, коррозии и дефектов на промышленных объектах. Повышайте безопасность и снижайте затраты на обслуживание.</p>
+                        <button class="btn btn-outline-success btn-block mt-3" data-toggle="modal" data-target="#damageModal">
+                            <i class="fas fa-play-circle mr-2"></i>Узнать алгоритм работы
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Колода 3: Медицина -->
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header text-center bg-success text-white">
+                        <i class="fas fa-heartbeat fa-2x mb-3"></i>
+                        <h4>Медицинская диагностика</h4>
+                    </div>
+                    <div class="card-body">
+                        <img src="{% static 'images/medical-example.jpg' %}" alt="Медицина" class="card-img-top mb-3" style="height: 200px; object-fit: cover; border-radius: 8px;">
+                        <p class="card-text">Анализ медицинских изображений для обнаружения аномалий и патологий. Поддержка врачей в диагностике и планировании лечения.</p>
+                        <button class="btn btn-outline-success btn-block mt-3" data-toggle="modal" data-target="#medicalModal">
+                            <i class="fas fa-play-circle mr-2"></i>Узнать алгоритм работы
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Призыв к действию -->
+<section class="cta-section py-5 text-center bg-light">
+    <div class="container">
+        <h2 class="mb-4">Готовы начать работу?</h2>
+        <p class="lead mb-4">Зарегистрируйтесь и получите доступ ко всем возможностям платформы JULIAN</p>
+        <a href="{% url 'register' %}" class="btn btn-success btn-lg mr-3">
+            <i class="fas fa-rocket mr-2"></i>Начать сейчас
+        </a>
+        <a href="{% url 'login' %}" class="btn btn-outline-success btn-lg">
+            <i class="fas fa-sign-in-alt mr-2"></i>Войти в систему
+        </a>
+    </div>
+</section>
+
+<!-- Модальные окна для алгоритмов -->
+{% include 'users/modals/algorithm_modals.html' %}
+
+<style>
+.hero-section {
+    background: linear-gradient(135deg, var(--white) 0%, var(--light-gray) 100%);
+    border-radius: 20px;
+    margin: 2rem auto;
+}
+
+.examples-section {
+    background-color: var(--white);
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%) !important;
+}
+
+.cta-section {
+    border-radius: 20px;
+    margin: 2rem auto;
+}
+
+/* Анимация для карточек */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px rgba(0, 168, 132, 0.15);
+}
+
+/* Стили для текста с анимацией */
+#typed-text {
+    background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Анимация набора текста
+    const text = "Я - Джулиан! Твой помощник в мире компьютерного зрения";
+    const typedTextElement = document.getElementById('typed-text');
+    let i = 0;
+    let speed = 100;
+
+    function typeWriter() {
+        if (i < text.length) {
+            typedTextElement.innerHTML = text.substring(0, i + 1) + '<span class="cursor">|</span>';
+            i++;
+            setTimeout(typeWriter, speed);
+        } else {
+            // После завершения набора оставляем мигающий курсор
+            typedTextElement.innerHTML = text + '<span class="cursor">|</span>';
+        }
+    }
+
+    // Запускаем анимацию через 0.5 секунды после загрузки
+    setTimeout(typeWriter, 500);
+
+    // Стиль для курсора
+    const style = document.createElement('style');
+    style.textContent = `
+        .cursor {
+            animation: blink 1s infinite;
+            color: var(--dark-green);
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}
+{% endblock %}

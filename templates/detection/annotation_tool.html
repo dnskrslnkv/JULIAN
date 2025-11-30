@@ -1,0 +1,583 @@
+<!-- templates/detection/annotation_tool.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Датасеты</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dataset_detail' dataset.pk %}">{{ dataset.name }}</a></li>
+                <li class="breadcrumb-item active">Разметка изображений</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1">Разметка датасета: {{ dataset.name }}</h4>
+                        <p class="mb-0">Размечено: {{ dataset.get_annotated_count }} из {{ dataset.get_image_count }} изображений</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="progress" style="width: 200px; height: 20px;">
+                            <div class="progress-bar bg-white text-dark" style="width: {{ progress_percentage }}%">
+                                {{ progress_percentage }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Сайдбар с навигацией и управлением -->
+    <div class="col-md-3">
+        <!-- Навигация по изображениям -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Изображения</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% for img in images %}
+                    <a href="{% url 'annotation_tool' dataset.pk img.pk %}"
+                       class="list-group-item list-group-item-action {% if img.pk == current_image.pk %}active{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-truncate" style="max-width: 70%;">
+                                {{ img.original_filename }}
+                            </small>
+                            <div>
+                                {% if img.is_annotated %}
+                                    <span class="badge badge-success badge-pill" title="{{ img.annotation_count }} аннотаций">
+                                        {{ img.annotation_count }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-light badge-pill">0</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма добавления аннотации -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Добавить аннотацию</h5>
+            </div>
+            <div class="card-body">
+                <form id="annotation-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="font-weight-bold">Метка объекта:</label>
+                        <input type="text"
+                               name="label"
+                               class="form-control"
+                               placeholder="Введите название объекта"
+                               list="label-suggestions"
+                               id="annotation-label">
+                        <datalist id="label-suggestions">
+                            <option value="Объект">
+                            <option value="Дефект">
+                            <option value="Животное">
+                            <option value="Человек">
+                            <option value="Транспорт">
+                            <option value="Другое">
+                        </datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Координаты:</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <small>X: <span id="coord-x">0</span></small>
+                            </div>
+                            <div class="col-6">
+                                <small>Y: <span id="coord-y">0</span></small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <small>Ширина: <span id="coord-width">0</span></small>
+                            </div>
+                            <div class="col-6">
+                                <small>Высота: <span id="coord-height">0</span></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-save"></i> Сохранить аннотацию
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список аннотаций -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Аннотации изображения</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="annotations-list" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                    {% for annotation in annotations %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-annotation-id="{{ annotation.id }}">
+                        <div>
+                            <span class="badge badge-success mr-2">{{ forloop.counter }}</span>
+                            {{ annotation.label }}
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger delete-annotation" data-id="{{ annotation.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Область для разметки -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-image"></i> {{ current_image.original_filename }}
+                </h5>
+                <div>
+                    <button id="clear-canvas" class="btn btn-warning btn-sm mr-2">
+                        <i class="fas fa-eraser"></i> Очистить
+                    </button>
+                    <button id="enable-drawing" class="btn btn-primary btn-sm">
+                        <i class="fas fa-draw-polygon"></i> Режим рисования
+                    </button>
+                </div>
+            </div>
+            <div class="card-body text-center">
+                <div class="annotation-container"
+                     data-annotations-url="{% url 'get_annotations' current_image.pk %}"
+                     data-save-url="{% url 'save_annotation' current_image.pk %}"
+                     data-progress-url="{% url 'annotation_progress' dataset.pk %}"
+                     data-delete-url-template="{% url 'delete_annotation' 0 %}"
+                     style="position: relative; display: inline-block;">
+                    <img id="annotation-image"
+                         src="{{ current_image.image.url }}"
+                         alt="{{ current_image.original_filename }}"
+                         class="img-fluid rounded shadow-sm"
+                         style="max-height: 70vh; cursor: crosshair;">
+                    <canvas id="annotation-canvas"
+                            style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+                </div>
+
+                <!-- Инструкция -->
+                <div class="mt-3 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Для добавления аннотации: включите режим рисования, выделите область на изображении и введите метку объекта.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрытые поля для координат -->
+<input type="hidden" id="annotation-x" name="x" value="">
+<input type="hidden" id="annotation-y" name="y" value="">
+<input type="hidden" id="annotation-width" name="width" value="">
+<input type="hidden" id="annotation-height" name="height" value="">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем URL из data-атрибутов
+    const container = document.querySelector('.annotation-container');
+    const GET_ANNOTATIONS_URL = container.dataset.annotationsUrl;
+    const SAVE_ANNOTATION_URL = container.dataset.saveUrl;
+    const PROGRESS_URL = container.dataset.progressUrl;
+    const DELETE_ANNOTATION_URL_TEMPLATE = container.dataset.deleteUrlTemplate;
+
+    const image = document.getElementById('annotation-image');
+    const canvas = document.getElementById('annotation-canvas');
+    const ctx = canvas.getContext('2d');
+    const annotationForm = document.getElementById('annotation-form');
+    const annotationsList = document.getElementById('annotations-list');
+
+    let isDrawing = false;
+    let isDrawingMode = false;
+    let startX, startY;
+    let currentRect = null;
+    let annotations = [];
+
+    // Настройка canvas
+    function setupCanvas() {
+        const rect = image.getBoundingClientRect();
+        canvas.width = image.offsetWidth;
+        canvas.height = image.offsetHeight;
+        canvas.style.width = image.offsetWidth + 'px';
+        canvas.style.height = image.offsetHeight + 'px';
+        canvas.style.pointerEvents = isDrawingMode ? 'auto' : 'none';
+
+        drawAnnotations();
+    }
+
+    // Загрузка существующих аннотаций
+    function loadAnnotations() {
+        fetch(GET_ANNOTATIONS_URL)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                annotations = data.annotations;
+                drawAnnotations();
+                updateAnnotationsList();
+            })
+            .catch(error => {
+                console.error('Error loading annotations:', error);
+                showNotification('Ошибка загрузки аннотаций', 'error');
+            });
+    }
+
+    // Рисование всех аннотаций
+    function drawAnnotations() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Рисуем существующие аннотации
+        annotations.forEach(ann => {
+            drawRect(
+                ann.x * canvas.width,
+                ann.y * canvas.height,
+                ann.width * canvas.width,
+                ann.height * canvas.height,
+                ann.label,
+                '#00a884'
+            );
+        });
+
+        // Рисуем текущий прямоугольник (если есть)
+        if (currentRect) {
+            drawRect(
+                currentRect.x,
+                currentRect.y,
+                currentRect.width,
+                currentRect.height,
+                'Новый объект',
+                '#ff6b6b'
+            );
+        }
+    }
+
+    // Рисование одного прямоугольника
+    function drawRect(x, y, width, height, label, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, width, height);
+
+        // Фон для подписи
+        ctx.fillStyle = color;
+        const textWidth = ctx.measureText(label).width;
+        ctx.fillRect(x, y - 20, textWidth + 10, 20);
+
+        // Текст подписи
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.fillText(label, x + 5, y - 5);
+    }
+
+    // Обновление списка аннотаций
+    function updateAnnotationsList() {
+        annotationsList.innerHTML = '';
+
+        annotations.forEach((ann, index) => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            item.setAttribute('data-annotation-id', ann.id);
+            item.innerHTML = `
+                <div>
+                    <span class="badge badge-success mr-2">${index + 1}</span>
+                    ${ann.label}
+                </div>
+                <button class="btn btn-sm btn-outline-danger delete-annotation" data-id="${ann.id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            annotationsList.appendChild(item);
+        });
+
+        // Добавляем обработчики удаления
+        document.querySelectorAll('.delete-annotation').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const annotationId = this.getAttribute('data-id');
+                deleteAnnotation(annotationId);
+            });
+        });
+    }
+
+    // Удаление аннотации
+    function deleteAnnotation(annotationId) {
+        if (!confirm('Удалить эту аннотацию?')) return;
+
+        const deleteUrl = DELETE_ANNOTATION_URL_TEMPLATE.replace('/0/', `/${annotationId}/`);
+
+        fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                annotations = annotations.filter(ann => ann.id != annotationId);
+                drawAnnotations();
+                updateAnnotationsList();
+                updateProgress();
+                showNotification('Аннотация удалена', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting annotation:', error);
+            showNotification('Ошибка удаления аннотации', 'error');
+        });
+    }
+
+    // Сохранение аннотации
+    function saveAnnotation(annotationData) {
+        fetch(SAVE_ANNOTATION_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(annotationData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                annotations.push({
+                    id: data.annotation_id,
+                    label: annotationData.label,
+                    x: annotationData.x,
+                    y: annotationData.y,
+                    width: annotationData.width,
+                    height: annotationData.height
+                });
+
+                drawAnnotations();
+                updateAnnotationsList();
+                annotationForm.reset();
+                currentRect = null;
+                updateProgress();
+
+                showNotification('Аннотация успешно сохранена!', 'success');
+            } else {
+                showNotification('Ошибка при сохранении аннотации', 'error');
+                console.error('Save error:', data.errors);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving annotation:', error);
+            showNotification('Ошибка при сохранении', 'error');
+        });
+    }
+
+    // Обновление прогресса
+    function updateProgress() {
+        fetch(PROGRESS_URL)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Progress updated:', data);
+            })
+            .catch(error => console.error('Error updating progress:', error));
+    }
+
+    // Показать уведомление
+    function showNotification(message, type) {
+        // Удаляем существующие уведомления
+        document.querySelectorAll('.alert-dismissible').forEach(alert => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        });
+
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const notification = document.createElement('div');
+        notification.className = `alert ${alertClass} alert-dismissible fade show`;
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        `;
+
+        const container = document.querySelector('.container');
+        container.insertBefore(notification, container.firstChild);
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+
+    // Обработчики событий мыши
+    canvas.addEventListener('mousedown', function(e) {
+        if (!isDrawingMode) return;
+
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+
+        currentRect = {
+            x: startX,
+            y: startY,
+            width: 0,
+            height: 0
+        };
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+        if (!isDrawingMode || !isDrawing) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        currentRect.width = currentX - startX;
+        currentRect.height = currentY - startY;
+
+        // Обновляем отображение координат
+        document.getElementById('coord-x').textContent = Math.round(currentRect.x);
+        document.getElementById('coord-y').textContent = Math.round(currentRect.y);
+        document.getElementById('coord-width').textContent = Math.round(Math.abs(currentRect.width));
+        document.getElementById('coord-height').textContent = Math.round(Math.abs(currentRect.height));
+
+        drawAnnotations();
+    });
+
+    canvas.addEventListener('mouseup', function() {
+        if (!isDrawingMode || !isDrawing) return;
+
+        isDrawing = false;
+
+        // Нормализуем координаты (0-1)
+        const normalizedRect = {
+            x: currentRect.x / canvas.width,
+            y: currentRect.y / canvas.height,
+            width: Math.abs(currentRect.width) / canvas.width,
+            height: Math.abs(currentRect.height) / canvas.height
+        };
+
+        // Заполняем скрытые поля формы
+        document.getElementById('annotation-x').value = normalizedRect.x;
+        document.getElementById('annotation-y').value = normalizedRect.y;
+        document.getElementById('annotation-width').value = normalizedRect.width;
+        document.getElementById('annotation-height').value = normalizedRect.height;
+    });
+
+    // Обработчик отправки формы
+    annotationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const label = document.getElementById('annotation-label').value;
+        const x = document.getElementById('annotation-x').value;
+        const y = document.getElementById('annotation-y').value;
+        const width = document.getElementById('annotation-width').value;
+        const height = document.getElementById('annotation-height').value;
+
+        if (!label || !x || !y || !width || !height) {
+            showNotification('Заполните все поля и нарисуйте bounding box!', 'error');
+            return;
+        }
+
+        if (parseFloat(width) < 0.01 || parseFloat(height) < 0.01) {
+            showNotification('Размер bounding box слишком мал!', 'error');
+            return;
+        }
+
+        const annotationData = {
+            label: label,
+            x: parseFloat(x),
+            y: parseFloat(y),
+            width: parseFloat(width),
+            height: parseFloat(height)
+        };
+
+        saveAnnotation(annotationData);
+    });
+
+    // Обработчик кнопки очистки
+    document.getElementById('clear-canvas').addEventListener('click', function() {
+        currentRect = null;
+        document.getElementById('annotation-x').value = '';
+        document.getElementById('annotation-y').value = '';
+        document.getElementById('annotation-width').value = '';
+        document.getElementById('annotation-height').value = '';
+        document.getElementById('coord-x').textContent = '0';
+        document.getElementById('coord-y').textContent = '0';
+        document.getElementById('coord-width').textContent = '0';
+        document.getElementById('coord-height').textContent = '0';
+        drawAnnotations();
+    });
+
+    // Обработчик кнопки режима рисования
+    document.getElementById('enable-drawing').addEventListener('click', function() {
+        isDrawingMode = !isDrawingMode;
+        canvas.style.pointerEvents = isDrawingMode ? 'auto' : 'none';
+        this.classList.toggle('btn-primary', isDrawingMode);
+        this.classList.toggle('btn-success', !isDrawingMode);
+        this.innerHTML = isDrawingMode ?
+            '<i class="fas fa-check"></i> Режим рисования (вкл)' :
+            '<i class="fas fa-draw-polygon"></i> Режим рисования';
+    });
+
+    // Вспомогательная функция для получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Инициализация
+    image.addEventListener('load', function() {
+        setupCanvas();
+        loadAnnotations();
+    });
+
+    // Если изображение уже загружено
+    if (image.complete) {
+        setupCanvas();
+        loadAnnotations();
+    }
+
+    // Обработчик изменения размера окна
+    window.addEventListener('resize', function() {
+        setupCanvas();
+    });
+});
+</script>
+{% endblock %}

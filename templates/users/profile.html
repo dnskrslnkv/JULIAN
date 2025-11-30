@@ -1,0 +1,163 @@
+<!-- templates/users/profile.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+                <li class="breadcrumb-item active">Мой профиль</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Информация о пользователе -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header text-center">
+                <h5 class="mb-0">Профиль пользователя</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Аватар" class="rounded-circle mb-3" width="150" height="150" style="object-fit: cover;">
+                {% else %}
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
+                        <i class="fas fa-user fa-3x text-muted"></i>
+                    </div>
+                {% endif %}
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted mb-2">{{ user.email }}</p>
+                {% if user.company %}<p class="text-muted mb-2">{{ user.company }}</p>{% endif %}
+                {% if user.position %}<p class="text-muted mb-3">{{ user.position }}</p>{% endif %}
+
+                <div class="stats mt-4">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <strong>{{ user_datasets_count }}</strong>
+                                <span class="text-muted">Датасетов</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <strong>{{ user.date_joined|date:"Y" }}</strong>
+                                <span class="text-muted">Год регистрации</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма редактирования -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Редактирование профиля</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.first_name|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.last_name|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.email|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.phone|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.company|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.position|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        {{ form.avatar|as_crispy_field }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Секция с датасетами пользователя -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Мои датасеты</h5>
+                <a href="{% url 'dataset_list' %}" class="btn btn-outline-primary btn-sm">Все датасеты</a>
+            </div>
+            <div class="card-body">
+                {% if datasets %}
+                    <div class="row">
+                        {% for dataset in datasets %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ dataset.name }}</h6>
+                                    <p class="card-text text-muted small">
+                                        {{ dataset.description|default:"Описание отсутствует"|truncatewords:10 }}
+                                    </p>
+                                    <div class="dataset-stats small text-muted">
+                                        <i class="fas fa-images"></i> {{ dataset.get_image_count }} изображений
+                                        <br>
+                                        <i class="fas fa-tag"></i> {{ dataset.get_annotated_count }} размечено
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ dataset.created_at|date:"d.m.Y" }}</small>
+                                        <a href="{% url 'dataset_detail' dataset.pk %}" class="btn btn-primary btn-sm">
+                                            Открыть
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">У вас пока нет датасетов</h5>
+                        <p class="text-muted">Создайте свой первый датасет для начала работы</p>
+                        <a href="{% url 'dataset_create' %}" class="btn btn-primary">
+                            Создать первый датасет
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,206 @@
+<!-- templates/dataset/dataset_detail.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Датасеты</a></li>
+                <li class="breadcrumb-item active">{{ dataset.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>{{ dataset.name }}</h1>
+        <p class="text-muted">{{ dataset.description }}</p>
+    </div>
+    <div class="col-md-4 text-right">
+        <div class="btn-group">
+            <a href="{% url 'dataset_upload' dataset.pk %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Добавить файлы
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                    Действия
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'annotation_start' dataset.pk %}">
+                        <i class="fas fa-pencil-alt"></i> Разметка
+                    </a>
+                    <a class="dropdown-item" href="{% url 'model_list' dataset.pk %}">
+                        <i class="fas fa-robot"></i> ML Модели
+                    </a>
+                    <a class="dropdown-item" href="{% url 'reports:report_list' dataset.pk %}">
+                        <i class="fas fa-file-alt"></i> Отчеты
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Навигация -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'dataset_upload' dataset.pk %}" class="btn btn-outline-primary btn-block">
+                            <i class="fas fa-upload fa-2x mb-2"></i><br>
+                            Загрузка файлов
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'annotation_start' dataset.pk %}" class="btn btn-outline-success btn-block">
+                            <i class="fas fa-pencil-alt fa-2x mb-2"></i><br>
+                            Разметка
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'model_list' dataset.pk %}" class="btn btn-outline-warning btn-block">
+                            <i class="fas fa-robot fa-2x mb-2"></i><br>
+                            ML Модели
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'reports:report_list' dataset.pk %}" class="btn btn-outline-info btn-block">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                            Отчеты
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ image_count }}</h3>
+                <p class="text-muted mb-0">Изображений</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ annotated_count }}</h3>
+                <p class="text-muted mb-0">Размечено</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ pdf_files.count }}</h3>
+                <p class="text-muted mb-0">PDF файлов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3>{{ dataset.status }}</h3>
+                <p class="text-muted mb-0">Статус</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-succes text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Изображения</h5>
+                <span class="badge badge-light">{{ image_count }}</span>
+            </div>
+            <div class="card-body">
+                {% if images %}
+                <div class="list-group">
+                    {% for image in images %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-image text-muted mr-2"></i>
+                            {{ image.original_filename|truncatechars:30 }}
+                            {% if image.is_annotated %}
+                                <span class="badge badge-success ml-2">Размечено</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <form method="POST" action="{% url 'delete_image' image.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Удалить это изображение?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">Нет загруженных изображений</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-succes text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">PDF файлы</h5>
+                <span class="badge badge-light">{{ pdf_files.count }}</span>
+            </div>
+            <div class="card-body">
+                {% if pdf_files %}
+                <div class="list-group">
+                    {% for pdf in pdf_files %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-file-pdf text-danger mr-2"></i>
+                            {{ pdf.original_filename|truncatechars:30 }}
+                        </div>
+                        <div>
+                            <form method="POST" action="{% url 'delete_pdf' pdf.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Удалить этот PDF файл?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">Нет загруженных PDF файлов</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        {% if image_count > 0 %}
+        <a href="{% url 'annotation_start' dataset.pk %}" class="btn btn-success btn-lg">
+            <i class="fas fa-pencil-alt"></i> Начать разметку
+        </a>
+        {% else %}
+        <p class="text-muted">Загрузите изображения, чтобы начать разметку</p>
+        <a href="{% url 'dataset_upload' dataset.pk %}" class="btn btn-primary">
+            Загрузить изображения
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

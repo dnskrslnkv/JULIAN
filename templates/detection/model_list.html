@@ -1,0 +1,319 @@
+<!-- templates/detection/model_list.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Датасеты</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dataset_detail' dataset.pk %}">{{ dataset.name }}</a></li>
+                <li class="breadcrumb-item active">ML Модели</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>ML Модели - {{ dataset.name }}</h1>
+                <p class="text-muted">Управление моделями машинного обучения</p>
+            </div>
+            <button class="btn btn-success" data-toggle="modal" data-target="#createModelModal">
+                <i class="fas fa-plus"></i> Создать модель
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Информация о датасете -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-light">
+            <div class="card-body">
+                <h3>{{ dataset.get_image_count }}</h3>
+                <p class="text-muted mb-0">Изображений</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-light">
+            <div class="card-body">
+                <h3>{{ dataset.get_annotated_count }}</h3>
+                <p class="text-muted mb-0">Размечено</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-light">
+            <div class="card-body">
+                <h3>{{ ml_models.count }}</h3>
+                <p class="text-muted mb-0">Моделей</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-light">
+            <div class="card-body">
+                <h3>{% widthratio dataset.get_annotated_count dataset.get_image_count 100 %}%</h3>
+                <p class="text-muted mb-0">Прогресс</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if ml_models %}
+<div class="row">
+    {% for model in ml_models %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ model.name }}</h5>
+                <span class="badge badge-{{ model.status_color }}">{{ model.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                {% if model.description %}
+                <p class="card-text">{{ model.description }}</p>
+                {% endif %}
+
+                <!-- Информация о статусе обучения -->
+                {% if model.status == 'training' %}
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                    <strong>Модель обучается...</strong> Это может занять несколько минут.
+                    {% if model.training_log %}
+                    <br><small>{{ model.training_log }}</small>
+                    {% endif %}
+                </div>
+                {% elif model.status == 'trained' and model.training_log %}
+                <div class="alert alert-success mb-3">
+                    <i class="fas fa-check-circle"></i>
+                    {{ model.training_log }}
+                </div>
+                {% elif model.status == 'error' and model.training_log %}
+                <div class="alert alert-danger mb-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ model.training_log }}
+                </div>
+                {% endif %}
+
+                <div class="model-stats mb-3">
+                    <div class="row text-center">
+                        {% if model.accuracy %}
+                        <div class="col-4">
+                            <h6 class="text-success">{{ model.accuracy|floatformat:1 }}%</h6>
+                            <small class="text-muted">Точность</small>
+                        </div>
+                        {% endif %}
+                        <div class="col-4">
+                            <h6>{{ model.created_at|date:"d.m.Y" }}</h6>
+                            <small class="text-muted">Создана</small>
+                        </div>
+                        {% if model.trained_at %}
+                        <div class="col-4">
+                            <h6>{{ model.trained_at|date:"d.m.Y" }}</h6>
+                            <small class="text-muted">Обучена</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="btn-group w-100">
+                    {% if model.status == 'not_trained' and can_train %}
+                    <form method="POST" action="{% url 'train_model' dataset.pk model.pk %}" class="d-inline" id="train-form-{{ model.id }}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-sm" id="train-btn-{{ model.id }}">
+                            <i class="fas fa-graduation-cap"></i> Обучить
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <a href="{% url 'model_detail' dataset.pk model.pk %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-info-circle"></i> Детали
+                    </a>
+                    <form method="POST" action="{% url 'delete_model' dataset.pk model.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить эту модель?')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+    <h3 class="text-muted">Нет созданных моделей</h3>
+    <p class="text-muted">Создайте свою первую ML модель для детекции объектов</p>
+    <button class="btn btn-success" data-toggle="modal" data-target="#createModelModal">
+        Создать первую модель
+    </button>
+</div>
+{% endif %}
+
+<!-- Модальное окно создания модели -->
+<div class="modal fade" id="createModelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header btn-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-robot"></i> Создание YOLO модели
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{% url 'create_model' dataset.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- Основные параметры модели -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="modelName" class="font-weight-bold">
+                                    <i class="fas fa-tag"></i> Название модели *
+                                </label>
+                                <input type="text" class="form-control" id="modelName" name="name" required
+                                       placeholder="Введите название модели">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="modelDescription" class="font-weight-bold">
+                                    <i class="fas fa-align-left"></i> Описание
+                                </label>
+                                <textarea class="form-control" id="modelDescription" name="description" rows="2"
+                                          placeholder="Краткое описание модели (необязательно)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    {% if not can_train %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Внимание:</strong> Для обучения модели требуется минимум 3 размеченных изображения.
+                        Сейчас размечено: <strong>{{ annotated_count }}</strong>
+                    </div>
+                    {% endif %}
+
+                    <!-- Памятка по обучению -->
+                    <div class="accordion mt-4" id="trainingGuideAccordion">
+                        <div class="card">
+                            <div class="card-header bg-light" id="guideHeading">
+                                <h6 class="mb-0">
+                                    <button class="btn btn-link btn-block text-left text-dark font-weight-bold" type="button"
+                                            data-toggle="collapse" data-target="#guideCollapse" aria-expanded="true">
+                                        <i class="fas fa-book-open"></i> 📚 Памятка по обучению и расшифровка терминов
+                                    </button>
+                                </h6>
+                            </div>
+                            <div id="guideCollapse" class="collapse show" aria-labelledby="guideHeading" data-parent="#trainingGuideAccordion">
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <h6 class="text-primary mb-3">
+                                            <i class="fas fa-book"></i> Расшифровка терминов:
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <div class="border p-3 rounded">
+                                                    <h6 class="text-success">🎯 Эпоха (Epoch)</h6>
+                                                    <p class="small mb-0">Один полный проход через все тренировочные данные. Больше эпох = больше обучение, но риск переобучения.</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <div class="border p-3 rounded">
+                                                    <h6 class="text-success">📦 Батч (Batch)</h6>
+                                                    <p class="small mb-0">Количество изображений, обрабатываемых за один шаг. Больше батч = быстрее обучение, но требуется больше памяти.</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <div class="border p-3 rounded">
+                                                    <h6 class="text-success">🖼️ Размер изображения</h6>
+                                                    <p class="small mb-0">Размер, к которому масштабируются изображения. Больше размер = лучше качество детекции, но медленнее обучение.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Рекомендации по объему данных -->
+                                    <div class="mb-4">
+                                        <h6 class="text-primary mb-3">
+                                            <i class="fas fa-chart-line"></i> Рекомендации по объему данных:
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="card {% if annotated_count < 100 %}border-warning{% else %}border-secondary{% endif %}">
+                                                    <div class="card-body text-center p-3">
+                                                        <h6 class="card-title">Малый датасет<br><small>&lt; 100 изображений</small></h6>
+                                                        <div class="text-warning">
+                                                            <strong>Эпохи: 50-80</strong><br>
+                                                            <small>Batch: 4-8</small><br>
+                                                            <small>Patience: 15-20</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card {% if 100 <= annotated_count < 500 %}border-info{% else %}border-secondary{% endif %}">
+                                                    <div class="card-body text-center p-3">
+                                                        <h6 class="card-title">Средний датасет<br><small>100-500 изображений</small></h6>
+                                                        <div class="text-info">
+                                                            <strong>Эпохи: 100-120</strong><br>
+                                                            <small>Batch: 8-16</small><br>
+                                                            <small>Patience: 25-30</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card {% if annotated_count >= 500 %}border-success{% else %}border-secondary{% endif %}">
+                                                    <div class="card-body text-center p-3">
+                                                        <h6 class="card-title">Большой датасет<br><small>> 500 изображений</small></h6>
+                                                        <div class="text-success">
+                                                            <strong>Эпохи: 150+</strong><br>
+                                                            <small>Batch: 16-32</small><br>
+                                                            <small>Patience: 40-50</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Важные советы -->
+                                    <div class="alert alert-info">
+                                        <h6 class="alert-heading">
+                                            <i class="fas fa-lightbulb"></i> Важные советы для успешного обучения:
+                                        </h6>
+                                        <ul class="small mb-0 pl-3">
+                                            <li><strong>Качество > Количество</strong> - лучше 100 качественных разметок, чем 1000 плохих</li>
+                                            <li><strong>Баланс классов</strong> - старайтесь иметь примерно одинаковое количество примеров для каждого класса</li>
+                                            <li><strong>Разнообразие данных</strong> - изображения должны представлять реальные сценарии использования</li>
+                                            <li><strong>Валидация</strong> - минимум 10-20% данных для валидации</li>
+                                            <li><strong>Аугментация</strong> - всегда используйте аугментацию данных для увеличения разнообразия</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                    <button type="submit" class="btn btn-success" {% if not can_train %}disabled{% endif %}>
+                        <i class="fas fa-plus-circle"></i> Создать модель
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

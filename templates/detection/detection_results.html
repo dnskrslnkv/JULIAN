@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dataset_list' %}">Датасеты</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'dataset_detail' dataset.pk %}">{{ dataset.name }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'model_list' dataset.pk %}">ML Модели</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'model_detail' dataset.pk model.pk %}">{{ model.name }}</a></li>
+                <li class="breadcrumb-item active">Результаты детекции</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Результаты детекции</h1>
+                <p class="text-muted">Модель: {{ model.name }} | Датасет: {{ dataset.name }}</p>
+            </div>
+            <div>
+                <a href="{% url 'reports:create_report' dataset.pk model.pk %}" class="btn btn-success">
+                    <i class="fas fa-file-alt"></i> Создать отчет
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры и статистика -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Фильтры</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="confidenceFilter">Уверенность (> %)</label>
+                    <input type="range" class="form-control-range" id="confidenceFilter" min="0" max="100" value="50">
+                    <small class="text-muted" id="confidenceValue">50%</small>
+                </div>
+                <div class="form-group">
+                    <label for="labelFilter">Класс объекта</label>
+                    <select class="form-control" id="labelFilter">
+                        <option value="">Все классы</option>
+                        {% for label in unique_labels %}
+                        <option value="{{ label }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button id="applyFilters" class="btn btn-primary btn-sm btn-block">Применить фильтры</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Статистика детекции</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-3">
+                        <h3>{{ total_detections }}</h3>
+                        <small class="text-muted">Всего обнаружений</small>
+                    </div>
+                    <div class="col-3">
+                        <h3>{{ detection_stats.avg_confidence|floatformat:1 }}%</h3>
+                        <small class="text-muted">Средняя уверенность</small>
+                    </div>
+                    <div class="col-3">
+                        <h3>{{ detection_stats.max_confidence|floatformat:1 }}%</h3>
+                        <small class="text-muted">Максимальная уверенность</small>
+                    </div>
+                    <div class="col-3">
+                        <h3>{{ unique_labels|length }}</h3>
+                        <small class="text-muted">Уникальных классов</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Визуализация детекций по классам -->
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Распределение по классам</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="classDistributionChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Результаты детекции с изображениями и разметкой -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Обнаруженные объекты</h5>
+                <div>
+                    <span class="badge badge-primary" id="filteredCount">{{ total_detections }}</span>
+                    <span class="text-muted">объектов</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row" id="detectionResults">
+                    {% for detection in detections %}
+                    <div class="col-md-6 col-lg-4 mb-4 detection-item"
+                        data-confidence="{{ detection.confidence }}"
+                        data-label="{{ detection.detected_label }}">
+                        <div class="card h-100">
+                            <div class="card-img-top position-relative">
+                                <img src="{{ detection.image.image.url }}"
+                                alt="{{ detection.image.original_filename }}"
+                                class="card-img-top detection-image"
+                                style="height: 200px; object-fit: cover;"
+                                data-x="{{ detection.x }}"
+                                data-y="{{ detection.y }}"
+                                data-width="{{ detection.width }}"
+                                data-height="{{ detection.height }}"
+                                data-label="{{ detection.detected_label }}"
+                                data-confidence="{{ detection.confidence }}">
+                            <canvas class="detection-canvas"
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">{{ detection.image.original_filename }}</h6>
+                                <p class="mb-2">
+                                    <span class="badge badge-success">{{ detection.detected_label }}</span>
+                                    <span class="badge badge-primary ml-2">{{ detection.confidence|floatformat:1 }}%</span>
+                                </p>
+                                <p class="text-muted small mb-2">
+                                    Координаты: ({{ detection.x|floatformat:2 }}, {{ detection.y|floatformat:2 }})<br>
+                                    Размер: {{ detection.width|floatformat:2 }} × {{ detection.height|floatformat:2 }}
+                                </p>
+                                <small class="text-muted">
+                                    {{ detection.created_at|date:"d.m.Y H:i" }}
+                                </small>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-sm btn-outline-primary btn-block view-detection"
+                                    data-image="{{ detection.image.image.url }}"
+                                    data-detection='{
+                                        "detected_label": "{{ detection.detected_label|escapejs }}",
+                                        "confidence": "{{ detection.confidence|floatformat:1 }}",
+                                        "x": {{ detection.x }},
+                                        "y": {{ detection.y }},
+                                        "width": {{ detection.width }},
+                                        "height": {{ detection.height }},
+                                        "created_at": "{{ detection.created_at|date:"c" }}",
+                                        "image": {
+                                            "original_filename": "{{ detection.image.original_filename|escapejs }}"
+                                        }
+                                    }'>
+                                <i class="fas fa-expand"></i> Увеличить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+                <!-- Пагинация -->
+                {% if detections.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if detections.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ detections.previous_page_number }}">Назад</a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in detections.paginator.page_range %}
+                        <li class="page-item {% if detections.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+
+                        {% if detections.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ detections.next_page_number }}">Вперед</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра детекции -->
+<div class="modal fade" id="detectionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Просмотр детекции</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="detectionVisualization" style="position: relative; display: inline-block;">
+                    <img id="detectionImage" src="" alt="" class="img-fluid rounded">
+                    <canvas id="detectionCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+                </div>
+                <div id="detectionDetails" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация графика распределения по классам
+    const ctx = document.getElementById('classDistributionChart').getContext('2d');
+    const classData = {{ class_distribution|safe }};
+
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: classData.labels,
+            datasets: [{
+                label: 'Количество обнаружений',
+                data: classData.counts,
+                backgroundColor: 'rgba(0, 168, 132, 0.7)',
+                borderColor: 'rgba(0, 168, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Количество'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Классы объектов'
+                    }
+                }
+            }
+        }
+    });
+
+    // === КОД ДЛЯ BOUNDING BOXES НА ОСНОВЕ DATA-АТРИБУТОВ ===
+    function drawBoundingBoxes() {
+        const images = document.querySelectorAll('.detection-image');
+
+        images.forEach(img => {
+            const container = img.parentElement;
+            const canvas = container.querySelector('.detection-canvas');
+
+            // Получаем данные из data-атрибутов
+            const x = parseFloat(img.getAttribute('data-x')) || 0;
+            const y = parseFloat(img.getAttribute('data-y')) || 0;
+            const width = parseFloat(img.getAttribute('data-width')) || 0;
+            const height = parseFloat(img.getAttribute('data-height')) || 0;
+            const label = img.getAttribute('data-label') || 'Unknown';
+            const confidence = parseFloat(img.getAttribute('data-confidence')) || 0;
+
+            console.log('Detection data for image:', { x, y, width, height, label, confidence });
+
+            // Проверяем валидность данных
+            if (!x && !y && !width && !height) {
+                console.log('No bounding box data available for this image');
+                return;
+            }
+
+            // Получаем размеры изображения
+            const imgWidth = img.naturalWidth;
+            const imgHeight = img.naturalHeight;
+            const displayWidth = img.clientWidth;
+            const displayHeight = img.clientHeight;
+
+            if (imgWidth === 0 || imgHeight === 0) {
+                console.log('Image not loaded yet');
+                return;
+            }
+
+            // Настраиваем canvas
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+            // Рассчитываем масштаб
+            const scaleX = displayWidth / imgWidth;
+            const scaleY = displayHeight / imgHeight;
+
+            // Рассчитываем координаты для отображения
+            const displayX = x * scaleX;
+            const displayY = y * scaleY;
+            const displayWidthScaled = width * scaleX;
+            const displayHeightScaled = height * scaleY;
+
+            // Рисуем bounding box
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(displayX, displayY, displayWidthScaled, displayHeightScaled);
+
+            // Рисуем фон для подписи
+            const labelText = `${label} (${confidence.toFixed(1)}%)`;
+            ctx.font = '12px Arial';
+            const textWidth = ctx.measureText(labelText).width + 8;
+            const textHeight = 16;
+
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.fillRect(displayX, Math.max(displayY - textHeight, 0), textWidth, textHeight);
+
+            // Рисуем текст
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(labelText, displayX + 4, Math.max(displayY - 4, textHeight - 4));
+        });
+    }
+
+    // Инициализация bounding boxes
+    function initBoundingBoxes() {
+        const images = document.querySelectorAll('.detection-image');
+
+        images.forEach(img => {
+            if (img.complete) {
+                // Если изображение уже загружено
+                setTimeout(() => drawBoundingBoxes(), 100);
+            } else {
+                // Ждем загрузки изображения
+                img.addEventListener('load', function() {
+                    setTimeout(() => drawBoundingBoxes(), 100);
+                });
+            }
+        });
+    }
+
+    // === ДОБАВЬТЕ ЭТИ СТРОКИ ДЛЯ ИНИЦИАЛИЗАЦИИ ===
+    // Инициализируем bounding boxes после загрузки DOM
+    setTimeout(() => {
+        initBoundingBoxes();
+    }, 500); // Даем время на загрузку изображений
+
+    // Перерисовываем при изменении размеров окна
+    window.addEventListener('resize', function() {
+        setTimeout(() => drawBoundingBoxes(), 250);
+    });
+    // === КОНЕЦ ДОБАВЛЕННЫХ СТРОК ===
+
+    // Фильтрация результатов
+    const confidenceFilter = document.getElementById('confidenceFilter');
+    const confidenceValue = document.getElementById('confidenceValue');
+    const labelFilter = document.getElementById('labelFilter');
+    const applyFilters = document.getElementById('applyFilters');
+    const detectionItems = document.querySelectorAll('.detection-item');
+    const filteredCount = document.getElementById('filteredCount');
+
+    confidenceFilter.addEventListener('input', function() {
+        confidenceValue.textContent = this.value + '%';
+    });
+
+    applyFilters.addEventListener('click', function() {
+        const minConfidence = parseInt(confidenceFilter.value) / 100;
+        const selectedLabel = labelFilter.value;
+
+        let visibleCount = 0;
+
+        detectionItems.forEach(item => {
+            const confidence = parseFloat(item.dataset.confidence);
+            const label = item.dataset.label;
+
+            const confidenceMatch = confidence >= minConfidence;
+            const labelMatch = !selectedLabel || label === selectedLabel;
+
+            if (confidenceMatch && labelMatch) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        filteredCount.textContent = visibleCount;
+
+        // === ДОБАВЬТЕ ЭТУ СТРОКУ ДЛЯ ПЕРЕРИСОВКИ ПОСЛЕ ФИЛЬТРАЦИИ ===
+        setTimeout(() => drawBoundingBoxes(), 300);
+    });
+
+    // Просмотр детекции в модальном окне
+    const viewButtons = document.querySelectorAll('.view-detection');
+    const detectionModal = new bootstrap.Modal(document.getElementById('detectionModal'));
+    const detectionImage = document.getElementById('detectionImage');
+    const detectionCanvas = document.getElementById('detectionCanvas');
+    const detectionDetails = document.getElementById('detectionDetails');
+    const detectionCtx = detectionCanvas.getContext('2d');
+
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const imageUrl = this.dataset.image;
+            const detection = JSON.parse(this.dataset.detection);
+
+            // Загружаем изображение
+            detectionImage.src = imageUrl;
+            detectionImage.onload = function() {
+                // Настраиваем canvas
+                detectionCanvas.width = this.naturalWidth;
+                detectionCanvas.height = this.naturalHeight;
+                detectionCanvas.style.width = this.width + 'px';
+                detectionCanvas.style.height = this.height + 'px';
+
+                // Рисуем bounding box
+                const x = detection.x * this.naturalWidth;
+                const y = detection.y * this.naturalHeight;
+                const width = detection.width * this.naturalWidth;
+                const height = detection.height * this.naturalHeight;
+
+                detectionCtx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+                detectionCtx.strokeStyle = '#ff6b6b';
+                detectionCtx.lineWidth = 3;
+                detectionCtx.strokeRect(x, y, width, height);
+
+                // Подпись
+                detectionCtx.fillStyle = '#ff6b6b';
+                const labelText = `${detection.detected_label} ${detection.confidence}%`;
+                const textWidth = detectionCtx.measureText(labelText).width + 10;
+                detectionCtx.fillRect(x, y - 25, textWidth, 25);
+                detectionCtx.fillStyle = '#ffffff';
+                detectionCtx.font = '14px Arial';
+                detectionCtx.fillText(labelText, x + 5, y - 8);
+            };
+
+            // Отображаем детали
+            detectionDetails.innerHTML = `
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h6 class="text-success">${detection.detected_label}</h6>
+                        <small class="text-muted">Класс</small>
+                    </div>
+                    <div class="col-4">
+                        <h6 class="text-primary">${detection.confidence}%</h6>
+                        <small class="text-muted">Уверенность</small>
+                    </div>
+                    <div class="col-4">
+                        <h6>${detection.image.original_filename}</h6>
+                        <small class="text-muted">Изображение</small>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <p class="mb-1"><strong>Координаты:</strong> (${parseFloat(detection.x).toFixed(3)}, ${parseFloat(detection.y).toFixed(3)})</p>
+                    <p class="mb-1"><strong>Размер:</strong> ${parseFloat(detection.width).toFixed(3)} × ${parseFloat(detection.height).toFixed(3)}</p>
+                    <p class="mb-0"><strong>Дата обнаружения:</strong> ${new Date(detection.created_at).toLocaleString()}</p>
+                </div>
+            `;
+
+            detectionModal.show();
+        });
+    });
+});
+</script>
+{% endblock %}

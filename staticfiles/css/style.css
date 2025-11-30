@@ -1,0 +1,61 @@
+:root {
+    --primary-green: #00a884;
+    --dark-green: #008c6c;
+    --light-green: #33ba9d;
+    --white: #ffffff;
+    --dark-gray: #1a1a1a;
+    --light-gray: #f5f5f5;
+    --border-gray: #e0e0e0;
+}
+
+body {
+    background-color: var(--white);
+    color: var(--dark-gray);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar {
+    background-color: var(--primary-green) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.card-header {
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.btn-primary:hover {
+    background-color: var(--dark-green);
+    border-color: var(--dark-green);
+}
+
+.stat-item {
+    text-align: center;
+    padding: 10px;
+}
+
+.stat-item strong {
+    display: block;
+    font-size: 2rem;
+    color: var(--primary-green);
+}
+
+.form-control:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(0, 168, 132, 0.25);
+}

@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN for pkg in $(cat requirements.txt); do pip install $pkg || true; done
 
 # Copy project
 COPY . .

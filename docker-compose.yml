@@ -1,9 +1,8 @@
 services:
   web:
     build: .
-    command: gunicorn julian.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    command: gunicorn julian.wsgi:application --bind 0.0.0.0:8000 --workers 3 --preload
     volumes:
-      - .:/app
       - static_volume:/app/static
       - media_volume:/app/media
     ports:
@@ -11,9 +10,16 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   db:
     image: postgres:15
@@ -25,53 +31,48 @@ services:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-    ports:
-      - "5432:5432"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   celery:
     build: .
     command: celery -A julian worker --loglevel=info
     volumes:
-      - .:/app
       - media_volume:/app/media
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   celery-beat:
     build: .
     command: celery -A julian beat --loglevel=info
     volumes:
-      - .:/app
       - media_volume:/app/media
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:1.25-alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - static_volume:/app/static
-      - media_volume:/app/media
-    depends_on:
-      - web
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

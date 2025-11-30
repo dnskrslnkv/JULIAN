@@ -8,15 +8,17 @@ ENV DJANGO_SETTINGS_MODULE=julian.settings
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies with error handling
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
-    postgresql-dev \
-    python3-dev \
+    postgresql-client \
     libpq-dev \
+    python3-dev \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    netcat-traditional \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Install Python dependencies
 COPY requirements.txt .

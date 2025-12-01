@@ -53,6 +53,14 @@ else:
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+# Set up default font for reportlab to avoid Helvetica error
+echo "Setting up default fonts..."
+python -c "
+import matplotlib
+matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
+print('Fonts initialized')
+"
+
 # Start server
 echo "Starting server with command: $@"
 exec "$@"

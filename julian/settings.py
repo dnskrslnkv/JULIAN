@@ -33,6 +33,7 @@ ALLOWED_HOSTS = [
     '91.218.112.166',
     'localhost',
     '127.0.0.1',
+    'web',
     ]
 
 
@@ -189,27 +190,27 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+
+
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'http')
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
+
+    # Cookie settings (для HTTP, не HTTPS)
+    CSRF_COOKIE_SECURE = False  # True для HTTPS
+    SESSION_COOKIE_SECURE = False  # True для HTTPS
+    CSRF_COOKIE_HTTPONLY = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_USE_SESSIONS = False
 
     # Для продакшена - убедитесь, что ALLOWED_HOSTS не пустой
     if not ALLOWED_HOSTS:
         ALLOWED_HOSTS = ['91.218.112.166', 'localhost', '127.0.0.1']
 
-# Security settings
-CSRF_TRUSTED_ORIGINS = [
-    'http://91.218.112.166',
-    'http://localhost',
-    'http://127.0.0.1',
-]
-
-# Для корректной работы за reverse proxy (Nginx)
-USE_X_FORWARDED_HOST = True
-CSRF_COOKIE_HTTPONLY = False
-SESSION_COOKIE_SAMESITE = 'Lax'
 
 # CORS settings
 CORS_ALLOW_CREDENTIALS = True
@@ -218,4 +219,17 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
 ]
+
+
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'http://91.218.112.166',
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://0.0.0.0',
+]
+
+
+
 

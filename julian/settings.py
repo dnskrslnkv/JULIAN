@@ -198,3 +198,24 @@ if not DEBUG:
     # Для продакшена - убедитесь, что ALLOWED_HOSTS не пустой
     if not ALLOWED_HOSTS:
         ALLOWED_HOSTS = ['91.218.112.166', 'localhost', '127.0.0.1']
+
+# Security settings
+CSRF_TRUSTED_ORIGINS = [
+    'http://91.218.112.166',
+    'http://localhost',
+    'http://127.0.0.1',
+]
+
+# Для корректной работы за reverse proxy (Nginx)
+USE_X_FORWARDED_HOST = True
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CORS settings
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://91.218.112.166",
+    "http://localhost",
+    "http://127.0.0.1",
+]
+

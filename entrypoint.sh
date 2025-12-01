@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e  # Exit on any error
+set -e
 
 echo "Starting application setup..."
 
@@ -37,10 +37,6 @@ echo "Redis started successfully!"
 echo "Applying database migrations..."
 python manage.py migrate --noinput
 
-# Collect static files
-echo "Collecting static files..."
-python manage.py collectstatic --noinput
-
 # Create superuser if doesn't exist
 echo "Creating superuser..."
 python manage.py shell -c "
@@ -52,6 +48,10 @@ if not User.objects.filter(username='admin').exists():
 else:
     print('Superuser already exists')
 "
+
+# Collect static files
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
 
 # Start server
 echo "Starting server with command: $@"

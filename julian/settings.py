@@ -33,9 +33,7 @@ ALLOWED_HOSTS = [
     '91.218.112.166',
     'localhost',
     '127.0.0.1',
-    '0.0.0.0',
-
-]
+    ]
 
 
 # Application definition
@@ -185,3 +183,18 @@ os.makedirs(MEDIA_ROOT / 'models', exist_ok=True)
 os.makedirs(MEDIA_ROOT / 'reports', exist_ok=True)
 os.makedirs(MEDIA_ROOT / 'yolo_datasets', exist_ok=True)
 os.makedirs(MEDIA_ROOT / 'yolo_training', exist_ok=True)
+
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Для продакшена - убедитесь, что ALLOWED_HOSTS не пустой
+    if not ALLOWED_HOSTS:
+        ALLOWED_HOSTS = ['91.218.112.166', 'localhost', '127.0.0.1']

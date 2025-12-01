@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    command: python -m gunicorn julian.wsgi:application --bind 0.0.0.0:8000 --workers 3 --preload
+    command: gunicorn julian.wsgi:application --bind 0.0.0.0:8000 --workers 3 --preload
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
@@ -37,7 +37,7 @@ services:
 
   redis:
     image: redis:6.2-alpine
-    command: redis-server --appendonly yes --protected-mode no --save 900 1 --save 300 10 --save 60 10000
+    command: redis-server --appendonly yes --protected-mode no
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

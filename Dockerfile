@@ -4,7 +4,6 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=julian.settings
-ENV YOLO_CONFIG_DIR=/tmp
 
 # Set work directory
 WORKDIR /app
@@ -25,24 +24,22 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Create a non-root user for Celery
-RUN useradd -m -u 1000 celeryuser
-
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN for pkg in $(cat requirements.txt); do pip install $pkg || true; done
 
-# Install opencv-python-headless
-RUN pip uninstall -y opencv-python || true
-RUN pip install opencv-python-headless==4.10.0.84
+# ЯВНО устанавливаем gunicorn (на случай, если его нет в requirements.txt)
+RUN pip install gunicorn==23.0.0
+
+# Проверяем установку
+RUN python -c "import gunicorn; print(f'Gunicorn version: {gunicorn.__version__}')"
 
 # Copy project
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p /app/static /app/media /app/media/models /app/media/reports /app/media/yolo_datasets /app/media/yolo_training
-RUN chown -R celeryuser:celeryuser /app/media
 
 # Make entrypoint script executable
 COPY entrypoint.sh .

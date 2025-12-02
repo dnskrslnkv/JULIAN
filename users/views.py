@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, ProfileUpdateForm
-from .models import CustomUser
+
 
 
 def home(request):
@@ -72,3 +72,10 @@ def dashboard(request):
         'annotated_images': annotated_images,
     }
     return render(request, 'users/dashboard.html', context)
+
+
+def logout_view(request):
+
+    logout(request)
+    messages.success(request, 'Вы успешно вышли из системы.')
+    return redirect('home')
